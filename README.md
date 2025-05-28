@@ -1,6 +1,7 @@
 # BookMyMandap Provider Frontend
 
-**BookMyMandap** is the frontend for a Mandap Booking Application built using the **MERN Stack** (MongoDB, ExpressJS, ReactJS, NodeJS). This client-side application allows users and providers to interact with the booking platform through a modern and responsive UI, handling bookings, orders, authentication, and real-time updates.
+- **BookMyMandap** is the frontend for a Mandap Booking Application built using the **MERN Stack** (MongoDB, ExpressJS, ReactJS, NodeJS). This client-side application allows users and providers to interact with the booking platform through a modern and responsive UI, handling bookings, orders, authentication, and real-time updates.
+- BookMyMandap has a dedicated front-end interface for mandap providers. It enables providers to **manage their venues**, **track bookings** and **update availability** seamlessly. Built with modern web technologies, this portal ensures an efficient and user-friendly experience for service providers, empowering them to grow and manage their business on the platform effortlessly.
 
 ---
 
@@ -29,7 +30,7 @@ tsconfig.json         TypeScript configuration for project-wide type safety
 
 - **Framework**: React.js  
 - **Language**: JavaScript  
-- **State Management**: Context API / Redux (based on implementation)
+- **State Management**: Redux (based on implementation)
 - **Styling**: Tailwinds CSS
 - **Testing**: Jest, React Testing Library  
 - **Linting & Formatting**: ESLint, Prettier  
