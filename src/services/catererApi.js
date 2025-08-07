@@ -40,6 +40,8 @@ export const addCaterer = async (
   {
     mandapId,
     catererName,
+    about,
+    profileImage,
     menuCategory,
     foodType,
     isCustomizable,
@@ -51,11 +53,18 @@ export const addCaterer = async (
   const formData = new FormData();
   formData.append("mandapId", mandapId);
   formData.append("catererName", catererName);
+  formData.append("about", about || "");
+  formData.append("profileImage", profileImage || "");
   formData.append("menuCategory", JSON.stringify(menuCategory));
   formData.append("foodType", JSON.stringify(foodType));
   formData.append("isCustomizable", isCustomizable.toString());
   formData.append("customizableItems", JSON.stringify(customizableItems));
   formData.append("hasTastingSession", hasTastingSession.toString());
+
+  if (profileImage && profileImage instanceof File) {
+    console.log("Appending profileImage file:", profileImage.name);
+    formData.append("profileImage", profileImage);
+  }
 
   categoryImage.forEach((file, index) => {
     if (file && file instanceof File) {
@@ -72,6 +81,8 @@ export const updateCaterer = async (catererId, catererData, categoryImage) => {
   const formData = new FormData();
   formData.append("mandapId", catererData.mandapId);
   formData.append("catererName", catererData.catererName);
+  formData.append("about", catererData.about || "");
+  formData.append("profileImage", catererData.profileImage || "");
   formData.append("menuCategory", JSON.stringify(catererData.menuCategory));
   formData.append("foodType", JSON.stringify(catererData.foodType));
   formData.append("isCustomizable", catererData.isCustomizable.toString());
@@ -83,6 +94,11 @@ export const updateCaterer = async (catererId, catererData, categoryImage) => {
     "hasTastingSession",
     catererData.hasTastingSession.toString()
   );
+
+  if (catererData.profileImage && catererData.profileImage instanceof File) {
+    console.log("Appending profileImage file:", catererData.profileImage.name);
+    formData.append("profileImage", catererData.profileImage);
+  }
 
   categoryImage.forEach((file, index) => {
     if (file && file instanceof File) {
@@ -108,6 +124,8 @@ export const getCatererById = async (catererId) => {
     mandapId: caterer.mandapId?._id || caterer.mandapId || "",
     menuCategory: caterer.menuCategory || [],
     foodType: Array.isArray(caterer.foodType) ? caterer.foodType : [],
+    about: caterer.about || "",
+    profileImage: caterer.profileImage || "",
   };
 };
 
@@ -118,6 +136,8 @@ export const getAllCaterers = async () => {
     mandapId: caterer.mandapId?._id || caterer.mandapId || "",
     menuCategory: caterer.menuCategory || [],
     foodType: Array.isArray(caterer.foodType) ? caterer.foodType : [],
+    about: caterer.about || "",
+    profileImage: caterer.profileImage || "",
   }));
 };
 
@@ -128,5 +148,7 @@ export const getCaterersByMandapId = async (mandapId) => {
     mandapId: caterer.mandapId?._id || caterer.mandapId || "",
     menuCategory: caterer.menuCategory || [],
     foodType: Array.isArray(caterer.foodType) ? caterer.foodType : [],
+    about: caterer.about || "",
+    profileImage: caterer.profileImage || "",
   }));
 };
