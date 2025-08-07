@@ -17,30 +17,38 @@ const EditCatererFormPage = () => {
   const [formData, setFormData] = useState({
     mandapId: "",
     catererName: "",
+    about: "",
+    profileImage: "",
     menuCategory: [
       {
         category: "",
-        menuItems: [],
-        pricePerPlate: "",
+        menuItems: [{ itemName: "", itemType: "" }],
+        pricePerPlate: 0,
         categoryImage: "",
       },
     ],
     foodType: [],
     isCustomizable: false,
-    customizableItems: [],
+    customizableItems: [{ itemName: "", itemPrice: 0, itemType: "" }],
     hasTastingSession: false,
     isActive: true,
   });
-  const [newMenuItem, setNewMenuItem] = useState({ itemName: "" });
+  const [newMenuItem, setNewMenuItem] = useState({
+    itemName: "",
+    itemType: "",
+  });
   const [newCustomItem, setNewCustomItem] = useState({
     itemName: "",
     itemPrice: "",
+    itemType: "",
   });
   const [categoryImage, setCategoryImage] = useState([]);
+  const [profileImageFile, setProfileImageFile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const foodTypes = ["Veg", "Non-Veg", "Jain", "Both"];
   const categoryOptions = ["Basic", "Standard", "Premium", "Luxury"];
+  const itemTypeOptions = ["Starter", "Main Course", "Dessert"];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -53,28 +61,44 @@ const EditCatererFormPage = () => {
         setMandaps(mandapsData);
         const menuCategory =
           catererData.menuCategory?.length > 0
-            ? catererData.menuCategory
+            ? catererData.menuCategory.map((cat) => ({
+                ...cat,
+                menuItems: cat.menuItems.map((item) => ({
+                  itemName: item.itemName || "",
+                  itemType: item.itemType || "",
+                })),
+                category: cat.category || "",
+                pricePerPlate: parseFloat(cat.pricePerPlate) || 0,
+                categoryImage: cat.categoryImage || "",
+              }))
             : [
                 {
                   category: "",
-                  menuItems: [],
-                  pricePerPlate: "",
+                  menuItems: [{ itemName: "", itemType: "" }],
+                  pricePerPlate: 0,
                   categoryImage: "",
                 },
               ];
         setFormData({
           mandapId: catererData.mandapId || "",
           catererName: catererData.catererName || "",
+          about: catererData.about || "",
+          profileImage: catererData.profileImage || "",
           menuCategory,
           foodType: Array.isArray(catererData.foodType)
             ? catererData.foodType
             : [],
           isCustomizable: catererData.isCustomizable || false,
-          customizableItems: catererData.customizableItems || [],
+          customizableItems: catererData.customizableItems.map((item) => ({
+            itemName: item.itemName || "",
+            itemPrice: parseFloat(item.itemPrice) || 0,
+            itemType: item.itemType || "",
+          })) || [{ itemName: "", itemPrice: 0, itemType: "" }],
           hasTastingSession: catererData.hasTastingSession || false,
           isActive: catererData.isActive ?? true,
         });
         setCategoryImage(menuCategory.map((cat) => cat.categoryImage || ""));
+        setProfileImageFile(null); // Reset file state on load
       } catch (error) {
         console.error("Error fetching data:", error);
         toast.error("Failed to load caterer data.");
@@ -108,8 +132,8 @@ const EditCatererFormPage = () => {
         ...prev.menuCategory,
         {
           category: "",
-          menuItems: [],
-          pricePerPlate: "",
+          menuItems: [{ itemName: "", itemType: "" }],
+          pricePerPlate: 0,
           categoryImage: "",
         },
       ],
@@ -129,7 +153,13 @@ const EditCatererFormPage = () => {
     setFormData((prev) => ({
       ...prev,
       menuCategory: prev.menuCategory.map((cat, i) =>
-        i === index ? { ...cat, [field]: value } : cat
+        i === index
+          ? {
+              ...cat,
+              [field]:
+                field === "pricePerPlate" ? parseFloat(value) || 0 : value,
+            }
+          : cat
       ),
     }));
   };
@@ -147,45 +177,63 @@ const EditCatererFormPage = () => {
     }
   };
 
-  const addMenuItem = (categoryIndex) => {
-    if (!newMenuItem.itemName) {
-      toast.error("Please enter a menu item name.");
-      return;
+  const handleProfileImageUpload = (files) => {
+    if (files && files.length > 0) {
+      const file = files[0];
+      const imageUrl = URL.createObjectURL(file);
+      setFormData((prev) => ({ ...prev, profileImage: imageUrl }));
+      setProfileImageFile(file);
     }
-    const updatedCategories = [...formData.menuCategory];
-    updatedCategories[categoryIndex].menuItems.push({
-      itemName: newMenuItem.itemName,
-    });
-    setFormData((prev) => ({ ...prev, menuCategory: updatedCategories }));
-    setNewMenuItem({ itemName: "" });
+  };
+
+  const addMenuItem = (categoryIndex) => {
+    if (newMenuItem.itemName.trim() && newMenuItem.itemType.trim()) {
+      const updatedCategories = [...formData.menuCategory];
+      updatedCategories[categoryIndex] = {
+        ...updatedCategories[categoryIndex],
+        menuItems: [
+          ...updatedCategories[categoryIndex].menuItems,
+          {
+            itemName: newMenuItem.itemName.trim(),
+            itemType: newMenuItem.itemType.trim(),
+          },
+        ],
+      };
+      setFormData((prev) => ({ ...prev, menuCategory: updatedCategories }));
+      setNewMenuItem({ itemName: "", itemType: "" });
+    }
   };
 
   const removeMenuItem = (categoryIndex, itemIndex) => {
     const updatedCategories = [...formData.menuCategory];
-    updatedCategories[categoryIndex].menuItems = updatedCategories[
-      categoryIndex
-    ].menuItems.filter((_, i) => i !== itemIndex);
+    updatedCategories[categoryIndex] = {
+      ...updatedCategories[categoryIndex],
+      menuItems: updatedCategories[categoryIndex].menuItems.filter(
+        (_, i) => i !== itemIndex
+      ),
+    };
     setFormData((prev) => ({ ...prev, menuCategory: updatedCategories }));
   };
 
   const addCustomizableItem = () => {
-    if (!newCustomItem.itemName || !newCustomItem.itemPrice) {
-      toast.error(
-        "Please enter both item name and price for customizable item."
-      );
-      return;
+    if (
+      newCustomItem.itemName.trim() &&
+      newCustomItem.itemPrice !== "" &&
+      newCustomItem.itemType.trim()
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        customizableItems: [
+          ...prev.customizableItems,
+          {
+            itemName: newCustomItem.itemName.trim(),
+            itemPrice: parseFloat(newCustomItem.itemPrice) || 0,
+            itemType: newCustomItem.itemType.trim(),
+          },
+        ],
+      }));
+      setNewCustomItem({ itemName: "", itemPrice: "", itemType: "" });
     }
-    setFormData((prev) => ({
-      ...prev,
-      customizableItems: [
-        ...prev.customizableItems,
-        {
-          itemName: newCustomItem.itemName,
-          itemPrice: parseFloat(newCustomItem.itemPrice),
-        },
-      ],
-    }));
-    setNewCustomItem({ itemName: "", itemPrice: "" });
   };
 
   const removeCustomizableItem = (index) => {
@@ -198,12 +246,11 @@ const EditCatererFormPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Validation
       if (!formData.mandapId) {
         toast.error("Please select a mandap.");
         return;
       }
-      if (!formData.catererName) {
+      if (!formData.catererName.trim()) {
         toast.error("Please enter a caterer name.");
         return;
       }
@@ -213,11 +260,19 @@ const EditCatererFormPage = () => {
       }
       if (
         formData.menuCategory.some(
-          (cat) => !cat.category || !cat.pricePerPlate || !cat.menuItems.length
+          (cat) =>
+            !cat.category.trim() ||
+            cat.pricePerPlate === "" ||
+            isNaN(cat.pricePerPlate) ||
+            cat.pricePerPlate < 0 ||
+            !cat.menuItems.length ||
+            !cat.menuItems.every(
+              (item) => item.itemName.trim() && item.itemType.trim()
+            )
         )
       ) {
         toast.error(
-          "Please fill all menu category details and add at least one menu item per category."
+          "Please fill all menu category details, add at least one menu item per category, and provide a valid price per plate."
         );
         return;
       }
@@ -226,23 +281,38 @@ const EditCatererFormPage = () => {
         return;
       }
 
-      const catererData = {
+      // Clean the data to remove any undefined or empty values
+      const cleanedData = {
         mandapId: formData.mandapId,
-        catererName: formData.catererName,
-        menuCategory: formData.menuCategory,
+        catererName: formData.catererName.trim(),
+        about: formData.about || "",
+        profileImage: formData.profileImage || "",
+        menuCategory: formData.menuCategory.map((cat) => ({
+          category: cat.category.trim(),
+          menuItems: cat.menuItems.map((item) => ({
+            itemName: item.itemName.trim(),
+            itemType: item.itemType.trim(),
+          })),
+          pricePerPlate: parseFloat(cat.pricePerPlate) || 0,
+          categoryImage: cat.categoryImage || "",
+        })),
         foodType: formData.foodType,
         isCustomizable: formData.isCustomizable,
-        customizableItems: formData.customizableItems,
+        customizableItems: formData.customizableItems.map((item) => ({
+          itemName: item.itemName.trim(),
+          itemPrice: parseFloat(item.itemPrice) || 0,
+          itemType: item.itemType.trim(),
+        })),
         hasTastingSession: formData.hasTastingSession,
       };
 
-      console.log("Submitting caterer data:", catererData);
-      console.log("Submitting category images:", categoryImage);
-
       await updateCaterer(
         id,
-        catererData,
-        categoryImage.filter((file) => file && file instanceof File)
+        cleanedData,
+        [
+          ...categoryImage.filter((file) => file && file instanceof File),
+          profileImageFile,
+        ].filter(Boolean)
       );
       toast.success("Caterer updated successfully!");
       navigate("/vendors");
@@ -312,6 +382,58 @@ const EditCatererFormPage = () => {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Input
+                label="About"
+                value={formData.about}
+                onChange={(e) => handleInputChange("about", e.target.value)}
+                placeholder="Enter description about caterer"
+                fullWidth
+                className="text-base font-medium"
+              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Profile Image
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                  <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                  <p className="text-sm text-gray-600">Upload profile image</p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    id="profile-image"
+                    onChange={(e) => handleProfileImageUpload(e.target.files)}
+                  />
+                  <label
+                    htmlFor="profile-image"
+                    className="mt-2 inline-block cursor-pointer bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+                  >
+                    Choose Image
+                  </label>
+                </div>
+                {formData.profileImage && (
+                  <div className="mt-2 relative">
+                    <img
+                      src={formData.profileImage}
+                      alt="Profile"
+                      className="w-32 h-32 object-cover rounded"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({ ...prev, profileImage: "" }));
+                        setProfileImageFile(null);
+                      }}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Food Type <span className="text-red-500">*</span>
@@ -355,7 +477,7 @@ const EditCatererFormPage = () => {
                   className="bg-yellow-50 p-4 rounded-lg mb-4 border border-gray-200"
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-base font-semibold text-gray-900">
+                    <h4 className="font-medium">
                       Category #{categoryIndex + 1}
                     </h4>
                     {formData.menuCategory.length > 1 && (
@@ -364,7 +486,7 @@ const EditCatererFormPage = () => {
                         onClick={() => removeMenuCategory(categoryIndex)}
                         variant="danger"
                         size="sm"
-                        className="bg-red-600 text-white hover:bg-red-700 rounded-full px-3 py-1"
+                        className="bg-red-500 text-white hover:bg-red-600 rounded-full px-3 py-1"
                       >
                         Remove
                       </Button>
@@ -388,6 +510,7 @@ const EditCatererFormPage = () => {
                       fullWidth
                       className="text-base font-medium"
                     />
+
                     <Input
                       label="Category Price (₹ per plate)"
                       type="number"
@@ -405,7 +528,7 @@ const EditCatererFormPage = () => {
                     />
                   </div>
 
-                  <div className="mt-4">
+                  <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Menu Items
                     </label>
@@ -419,7 +542,24 @@ const EditCatererFormPage = () => {
                             itemName: e.target.value,
                           }))
                         }
-                        className="w-full sm:w-2/3 text-base font-medium"
+                        className="w-full sm:w-1/3 text-base font-medium"
+                      />
+                      <Select
+                        options={[
+                          { value: "", label: "Select item type" },
+                          ...itemTypeOptions.map((type) => ({
+                            value: type,
+                            label: type,
+                          })),
+                        ]}
+                        value={newMenuItem.itemType}
+                        onChange={(value) =>
+                          setNewMenuItem((prev) => ({
+                            ...prev,
+                            itemType: value,
+                          }))
+                        }
+                        className="w-full sm:w-1/3 text-base font-medium"
                       />
                       <Button
                         type="button"
@@ -438,8 +578,8 @@ const EditCatererFormPage = () => {
                           key={itemIndex}
                           className="flex items-center justify-between bg-white p-2 rounded border border-gray-200"
                         >
-                          <span className="text-sm font-medium text-gray-700">
-                            {item.itemName}
+                          <span className="text-sm text-gray-700">
+                            {item.itemName} ({item.itemType})
                           </span>
                           <Button
                             type="button"
@@ -448,7 +588,7 @@ const EditCatererFormPage = () => {
                             }
                             variant="ghost"
                             size="sm"
-                            className="text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full p-1"
+                            className="text-red-500 hover:text-red-700"
                             icon={<X className="h-4 w-4" />}
                           />
                         </div>
@@ -456,13 +596,13 @@ const EditCatererFormPage = () => {
                     </div>
                   </div>
 
-                  <div className="mt-4">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Category Image
                     </label>
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                       <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                      <p className="text-sm font-medium text-gray-600">
+                      <p className="text-sm text-gray-600">
                         Upload category image
                       </p>
                       <input
@@ -479,7 +619,7 @@ const EditCatererFormPage = () => {
                       />
                       <label
                         htmlFor={`category-image-${categoryIndex}`}
-                        className="mt-2 inline-block cursor-pointer bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700"
+                        className="mt-2 inline-block cursor-pointer bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
                       >
                         Choose Image
                       </label>
@@ -489,7 +629,7 @@ const EditCatererFormPage = () => {
                         <img
                           src={category.categoryImage}
                           alt={`Category ${categoryIndex + 1}`}
-                          className="w-32 h-32 object-cover rounded-lg border border-gray-200 shadow-sm"
+                          className="w-32 h-32 object-cover rounded"
                         />
                         <button
                           type="button"
@@ -505,7 +645,7 @@ const EditCatererFormPage = () => {
                               return newImages;
                             });
                           }}
-                          className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -532,6 +672,7 @@ const EditCatererFormPage = () => {
                   </span>
                 </label>
               </div>
+
               <div>
                 <label className="flex items-center">
                   <input
@@ -551,7 +692,7 @@ const EditCatererFormPage = () => {
 
             {formData.isCustomizable && (
               <div>
-                <h4 className="text-base font-semibold text-gray-900 mb-2">
+                <h4 className="font-medium mb-2 text-gray-900">
                   Customizable Items
                 </h4>
                 <div className="flex flex-col sm:flex-row gap-2 mb-2">
@@ -564,7 +705,7 @@ const EditCatererFormPage = () => {
                         itemName: e.target.value,
                       }))
                     }
-                    className="w-full sm:w-7/12 text-base font-medium"
+                    className="w-full sm:w-5/12 text-base font-medium"
                   />
                   <Input
                     placeholder="Price"
@@ -577,6 +718,20 @@ const EditCatererFormPage = () => {
                       }))
                     }
                     className="w-full sm:w-3/12 text-base font-medium"
+                  />
+                  <Select
+                    options={[
+                      { value: "", label: "Select item type" },
+                      ...itemTypeOptions.map((type) => ({
+                        value: type,
+                        label: type,
+                      })),
+                    ]}
+                    value={newCustomItem.itemType}
+                    onChange={(value) =>
+                      setNewCustomItem((prev) => ({ ...prev, itemType: value }))
+                    }
+                    className="w-full sm:w-2/12 text-base font-medium"
                   />
                   <Button
                     type="button"
@@ -595,15 +750,15 @@ const EditCatererFormPage = () => {
                       key={index}
                       className="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-200"
                     >
-                      <span className="text-sm font-medium text-gray-700">
-                        {item.itemName} - ₹{item.itemPrice}
+                      <span className="text-sm text-gray-700">
+                        {item.itemName} - ₹{item.itemPrice} ({item.itemType})
                       </span>
                       <Button
                         type="button"
                         onClick={() => removeCustomizableItem(index)}
                         variant="ghost"
                         size="sm"
-                        className="text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full p-1"
+                        className="text-red-500 hover:text-red-700"
                         icon={<X className="h-4 w-4" />}
                       />
                     </div>
@@ -617,16 +772,16 @@ const EditCatererFormPage = () => {
                 type="button"
                 variant="outline"
                 onClick={() => navigate("/vendors")}
-                className="px-6 py-2.5 border-indigo-500 text-indigo-700 hover:bg-indigo-100 rounded-full text-base font-semibold"
                 fullWidth={window.innerWidth < 640}
+                className="border-indigo-600 text-indigo-600 hover:bg-indigo-50 rounded-full px-6 py-2"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 icon={<Save className="h-4 w-4" />}
-                className="px-6 py-2.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded-full text-base font-semibold"
                 fullWidth={window.innerWidth < 640}
+                className="bg-indigo-600 text-white hover:bg-indigo-700 rounded-full px-6 py-2"
               >
                 Update Caterer
               </Button>

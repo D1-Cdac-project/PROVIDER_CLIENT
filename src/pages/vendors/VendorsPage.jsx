@@ -32,7 +32,6 @@ const VendorsPage = () => {
           getPhotographers(),
           getAllRooms(),
         ]);
-
         setCaterers(caterersData);
         setPhotographers(photographersData);
         setRooms(roomsData);
@@ -360,7 +359,6 @@ const VendorsPage = () => {
                   />
                 </div>
                 <div className="p-5">
-                  <h4 className="text-xl font-semibold text-gray-900">Room</h4>
                   <p className="text-base font-medium text-gray-600 mt-1">
                     Mandap: {room.mandapId?.mandapName || "N/A"}
                   </p>
