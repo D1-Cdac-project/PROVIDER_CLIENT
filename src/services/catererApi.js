@@ -133,7 +133,6 @@ export const getAllCaterers = async () => {
   const response = await api.get("/get-all-caterers");
   return response.data.data.caterers.map((caterer) => ({
     ...caterer,
-    mandapId: caterer.mandapId?._id || caterer.mandapId || "",
     menuCategory: caterer.menuCategory || [],
     foodType: Array.isArray(caterer.foodType) ? caterer.foodType : [],
     about: caterer.about || "",
