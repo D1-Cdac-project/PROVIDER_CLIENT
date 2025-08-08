@@ -176,18 +176,19 @@ const BookingsPage: React.FC = () => {
     return [fullAddress, city, state, pinCode].filter(Boolean).join(", ");
   };
 
-  // Calculate total revenue and pending amount
-  const totalRevenue = bookings.reduce(
-    (sum, booking) => sum + booking.totalAmount,
-    0
-  );
+  const totalRevenue = bookings.reduce((sum, booking) => {
+    const paid = booking.fullBooking?.amountPaid || 0;
+    return sum + paid;
+  }, 0);
+
   const totalPending = bookings.reduce((sum, booking) => {
-    const fullBooking = booking.fullBooking;
-    return (
-      sum +
-      (fullBooking.remainingAmount ||
-        fullBooking.totalAmount - (fullBooking.amountPaid || 0))
-    );
+    const remaining = booking.fullBooking?.remainingAmount || 0;
+    return sum + remaining;
+  }, 0);
+
+  const totalExpected = bookings.reduce((sum, booking) => {
+    const total = booking.fullBooking?.totalAmount || 0;
+    return sum + total;
   }, 0);
 
   if (loading) {
@@ -204,7 +205,21 @@ const BookingsPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Bookings</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Card>
+        <CardContent className="flex items-center p-6">
+          <div className="p-4 bg-primary-50 rounded-full mr-4">
+            <DollarSign className="h-8 w-8 text-primary-500" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-500">Total Amount</p>
+            <h3 className="text-2xl font-semibold text-gray-900">
+              ₹{totalExpected.toLocaleString()}
+            </h3>
+          </div>
+        </CardContent>
+      </Card>
+
         <Card>
           <CardContent className="flex items-center p-6">
             <div className="p-4 bg-success-50 rounded-full mr-4">
