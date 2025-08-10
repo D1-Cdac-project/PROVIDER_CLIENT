@@ -17,7 +17,7 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState({
     name: user?.name || "",
     email: user?.email || "",
-    phone: user?.phone || "",
+    phoneNumber: user?.phoneNumber || "",
   });
 
   const handleChange = (e) => {
@@ -90,9 +90,9 @@ export default function ProfilePage() {
 
             <Input
               label="Phone Number"
-              name="phone"
+              name="phoneNumber"
               type="tel"
-              value={formData.phone}
+              value={formData.phoneNumber}
               onChange={handleChange}
               required
             />
