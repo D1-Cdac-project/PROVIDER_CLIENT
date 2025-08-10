@@ -54,7 +54,6 @@ const BookingsPage: React.FC = () => {
           fullBooking: booking,
         }));
         setBookings(mappedBookings);
-        console.log(bookings, "======");
       } catch (error) {
         console.error("Error fetching bookings:", error);
         toast.error("Failed to load bookings. Please try again.");

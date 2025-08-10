@@ -175,7 +175,6 @@ const RoomFormPage = () => {
         );
         toast.success("Room updated successfully!");
       } else {
-        console.log(formData, "formData====================");
         await addRoom(
           {
             mandapId: formData.mandapId,

@@ -68,9 +68,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const data = await providerLogin({ email, password });
-      console.log("Login response:", data); // Debug log
       if (data.provider.authorizationStatus !== "approved") {
-        console.log("Login blocked: authorizationStatus is not approved"); // Debug log
         toast.error(
           data.provider.authorizationStatus === "rejected"
             ? "Admin rejected your approval request."

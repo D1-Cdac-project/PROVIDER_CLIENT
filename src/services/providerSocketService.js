@@ -39,10 +39,6 @@ export const providerSocketService = {
 
     // Handle connection
     providerSocketService.socket.on("connect", () => {
-      console.log(
-        "Connected to Socket.IO server:",
-        providerSocketService.socket.id
-      );
       // Join provider room
       providerSocketService.socket.emit("joinProviderRoom", providerId);
       toast.success("Connected to real-time updates");
@@ -50,7 +46,6 @@ export const providerSocketService = {
 
     // Handle new provider registration event
     providerSocketService.socket.on("newProviderRegistration", (data) => {
-      console.log("New provider registered:", data);
       toast.success(
         `Welcome, ${data.provider.name}! Your account is pending approval.`
       );
@@ -74,13 +69,11 @@ export const providerSocketService = {
 
     // Handle login success event
     providerSocketService.socket.on("loginSuccess", (data) => {
-      console.log("Login successful:", data);
       toast.success("Logged in successfully!");
     });
 
     // Handle approval status update
     providerSocketService.socket.on("approvalStatusUpdate", (data) => {
-      console.log("Approval status updated:", data);
       const message =
         data.status === "approved"
           ? "Your provider account has been approved!"
@@ -106,7 +99,6 @@ export const providerSocketService = {
 
     // Handle new booking notification
     providerSocketService.socket.on("new_booking", (data) => {
-      console.log("New booking notification:", data);
       toast.success(data.message);
       const notification = {
         id: data.id,
@@ -130,7 +122,6 @@ export const providerSocketService = {
 
     // Handle deleted booking notification
     providerSocketService.socket.on("deleted_booking", (data) => {
-      console.log("Booking deleted notification:", data);
       toast.error(data.message);
       const notification = {
         id: data.id,
@@ -154,7 +145,6 @@ export const providerSocketService = {
 
     // Handle updated booking notification
     providerSocketService.socket.on("updated_booking", (data) => {
-      console.log("Booking updated notification:", data);
       toast.success(data.message);
       const notification = {
         id: data.id,
@@ -178,7 +168,6 @@ export const providerSocketService = {
 
     // Handle new review notification
     providerSocketService.socket.on("new_review", (data) => {
-      console.log("New review notification:", data);
       toast.success(data.message);
       const notification = {
         id: data.id,
@@ -202,13 +191,11 @@ export const providerSocketService = {
 
     // Handle connection error
     providerSocketService.socket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error.message);
       toast.error("Failed to connect to real-time updates");
     });
 
     // Handle disconnection
     providerSocketService.socket.on("disconnect", () => {
-      console.log("Disconnected from Socket.IO server");
       toast.error("Disconnected from real-time updates");
     });
   },
@@ -218,7 +205,6 @@ export const providerSocketService = {
     if (providerSocketService.socket) {
       providerSocketService.socket.disconnect();
       providerSocketService.socket = null;
-      console.log("Provider socket disconnected");
     }
   },
 

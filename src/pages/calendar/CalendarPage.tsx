@@ -35,8 +35,6 @@ const CalendarPage: React.FC = () => {
       try {
         setLoading(true);
         const bookingsData = await getBookingsByProvider();
-        console.log(bookingsData);
-
         setBookings(bookingsData);
       } catch (error) {
         console.error("Error fetching bookings:", error);

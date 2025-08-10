@@ -1016,7 +1016,6 @@ export default function MandapFormPage() {
         try {
           setLoading(true);
           const mandap = await getMandapById(id);
-          console.log("Fetched mandap data:", mandap);
           setFormData({
             mandapName: mandap.mandapName || mandap.name || "",
             mandapDesc: mandap.mandapDesc || mandap.description || "",
@@ -1164,10 +1163,9 @@ export default function MandapFormPage() {
         isExternalCateringAllowed,
       } = formData;
 
-      console.log("Submitting form data:", formData); // Debug log before submission
       const mandapData = {
         mandapName,
-        mandapDesc: mandapDesc || "", // Ensure mandapDesc is not undefined
+        mandapDesc: mandapDesc || "",
         city: address.city,
         state: address.state,
         pincode: address.pincode,

@@ -192,8 +192,6 @@ const EditRoomFormPage = () => {
     );
   }
 
-  console.log(mandaps, "+++++++++++++++++++");
-
   return (
     <div className="mx-auto space-y-6 p-4 sm:p-6 max-w-4xl font-inter">
       <div className="flex items-center">

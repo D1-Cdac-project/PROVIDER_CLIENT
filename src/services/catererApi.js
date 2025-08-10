@@ -62,13 +62,11 @@ export const addCaterer = async (
   formData.append("hasTastingSession", hasTastingSession.toString());
 
   if (profileImage && profileImage instanceof File) {
-    console.log("Appending profileImage file:", profileImage.name);
     formData.append("profileImage", profileImage);
   }
 
   categoryImage.forEach((file, index) => {
     if (file && file instanceof File) {
-      console.log(`Appending file for categoryImage[${index}]:`, file.name);
       formData.append(`categoryImage[${index}]`, file);
     }
   });
@@ -96,13 +94,11 @@ export const updateCaterer = async (catererId, catererData, categoryImage) => {
   );
 
   if (catererData.profileImage && catererData.profileImage instanceof File) {
-    console.log("Appending profileImage file:", catererData.profileImage.name);
     formData.append("profileImage", catererData.profileImage);
   }
 
   categoryImage.forEach((file, index) => {
     if (file && file instanceof File) {
-      console.log(`Appending file for categoryImage[${index}]:`, file.name);
       formData.append(`categoryImage[${index}]`, file);
     }
   });

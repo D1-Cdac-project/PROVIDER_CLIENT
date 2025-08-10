@@ -114,7 +114,6 @@ export default function EditMandapPage() {
         setLoading(true);
         const response = await getMandapById(id);
         const mandap = response.mandap;
-        console.log("Fetched mandap data:", mandap);
         setFormData({
           mandapName: mandap.mandapName || "",
           mandapDesc: mandap.mandapDesc || "",
@@ -296,12 +295,10 @@ export default function EditMandapPage() {
         advancePayment: parseFloat(formData.advancePayment) || 0,
       };
 
-      console.log("Submitting update data:", mandapData);
       await updateMandap(id, mandapData, formData.venueImages);
       toast.success("Mandap updated successfully!");
       navigate("/mandaps");
     } catch (error) {
-      console.error("Error updating mandap:", error);
       toast.error("Failed to update mandap. Please try again.");
     } finally {
       setLoading(false);
