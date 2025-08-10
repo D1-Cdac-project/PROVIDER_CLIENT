@@ -176,18 +176,19 @@ const BookingsPage: React.FC = () => {
     return [fullAddress, city, state, pinCode].filter(Boolean).join(", ");
   };
 
-  // Calculate total revenue and pending amount
-  const totalRevenue = bookings.reduce(
-    (sum, booking) => sum + booking.totalAmount,
-    0
-  );
+  const totalRevenue = bookings.reduce((sum, booking) => {
+    const paid = booking.fullBooking?.amountPaid || 0;
+    return sum + paid;
+  }, 0);
+
   const totalPending = bookings.reduce((sum, booking) => {
-    const fullBooking = booking.fullBooking;
-    return (
-      sum +
-      (fullBooking.remainingAmount ||
-        fullBooking.totalAmount - (fullBooking.amountPaid || 0))
-    );
+    const remaining = booking.fullBooking?.remainingAmount || 0;
+    return sum + remaining;
+  }, 0);
+
+  const totalExpected = bookings.reduce((sum, booking) => {
+    const total = booking.fullBooking?.totalAmount || 0;
+    return sum + total;
   }, 0);
 
   if (loading) {
@@ -204,7 +205,21 @@ const BookingsPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Bookings</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Card>
+        <CardContent className="flex items-center p-6">
+          <div className="p-4 bg-primary-50 rounded-full mr-4">
+            <DollarSign className="h-8 w-8 text-primary-500" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-500">Total Amount</p>
+            <h3 className="text-2xl font-semibold text-gray-900">
+              ₹{totalExpected.toLocaleString()}
+            </h3>
+          </div>
+        </CardContent>
+      </Card>
+
         <Card>
           <CardContent className="flex items-center p-6">
             <div className="p-4 bg-success-50 rounded-full mr-4">
@@ -412,7 +427,7 @@ const BookingsPage: React.FC = () => {
           <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto bg-white rounded-lg shadow-xl">
             <CardHeader className="flex justify-between items-center border-b border-gray-200">
               <CardTitle className="text-xl font-semibold text-gray-900">
-                Booking Details - #{selectedBooking._id}
+                Booking Details - #{selectedBooking?._id}
               </CardTitle>
               <Button
                 variant="ghost"
@@ -430,19 +445,19 @@ const BookingsPage: React.FC = () => {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <p>
-                    <strong>Name:</strong> {selectedBooking.mandapId.mandapName}
+                    <strong>Name:</strong> {selectedBooking?.mandapId?.mandapName}
                   </p>
                   <p>
                     <strong>Venue Pricing:</strong> ₹
-                    {selectedBooking.mandapId.venuePricing.toLocaleString()}
+                    {selectedBooking?.mandapId?.venuePricing?.toLocaleString()}
                   </p>
                   <p>
                     <strong>Security Deposit:</strong> ₹
-                    {selectedBooking.mandapId.securityDeposit.toLocaleString()}
+                    {selectedBooking?.mandapId?.securityDeposit?.toLocaleString()}
                   </p>
                   <p>
                     <strong>Address:</strong>{" "}
-                    {formatAddress(selectedBooking.mandapId.address)}
+                    {formatAddress(selectedBooking?.mandapId?.address)}
                   </p>
                 </CardContent>
               </Card>
@@ -455,17 +470,17 @@ const BookingsPage: React.FC = () => {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <p>
-                    <strong>Name:</strong> {selectedBooking.userId.fullName}
+                    <strong>Name:</strong> {selectedBooking?.userId?.fullName}
                   </p>
                   <p>
-                    <strong>Email:</strong> {selectedBooking.userId.email}
+                    <strong>Email:</strong> {selectedBooking?.userId?.email}
                   </p>
                   <p>
-                    <strong>Phone:</strong> {selectedBooking.userId.phoneNumber}
+                    <strong>Phone:</strong> {selectedBooking?.userId?.phoneNumber}
                   </p>
                   <p>
                     <strong>Address:</strong>{" "}
-                    {formatAddress(selectedBooking.userId.address)}
+                    {formatAddress(selectedBooking?.userId?.address)}
                   </p>
                 </CardContent>
               </Card>
@@ -479,21 +494,21 @@ const BookingsPage: React.FC = () => {
                 <CardContent className="space-y-2">
                   <p>
                     <strong>Order Dates:</strong>{" "}
-                    {selectedBooking.orderDates
-                      .map((date) => format(new Date(date), "dd MMM yyyy"))
+                    {selectedBooking?.orderDates
+                      ?.map((date) => format(new Date(date), "dd MMM yyyy"))
                       .join(", ")}
                   </p>
                   <p>
                     <strong>Total Amount:</strong> ₹
-                    {selectedBooking.totalAmount.toLocaleString()}
+                    {selectedBooking?.totalAmount?.toLocaleString()}
                   </p>
                   <p>
                     <strong>Amount Paid:</strong> ₹
-                    {selectedBooking.amountPaid.toLocaleString()}
+                    {selectedBooking?.amountPaid?.toLocaleString()}
                   </p>
                   <p>
                     <strong>Payment Status:</strong>{" "}
-                    {selectedBooking.paymentStatus}
+                    {selectedBooking?.paymentStatus}
                   </p>
                 </CardContent>
               </Card>
@@ -505,14 +520,14 @@ const BookingsPage: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  {selectedBooking.caterer.map((caterer, index) => (
+                  {selectedBooking?.caterer?.map((caterer, index) => (
                     <div key={index}>
                       <p>
-                        <strong>Name:</strong> {caterer.catererName}
+                        <strong>Name:</strong> {caterer?.catererName}
                       </p>
                       <p>
                         <strong>Category:</strong>{" "}
-                        {caterer.menuCategory.category}
+                        {caterer?.menuCategory?.category}
                       </p>
                     </div>
                   ))}
@@ -526,25 +541,26 @@ const BookingsPage: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  {selectedBooking.photographer.map((photographer, index) => (
+                  {selectedBooking?.photographer?.map((photographer, index) => (
                     <div key={index}>
                       <p>
-                        <strong>Name:</strong> {photographer.photographerName}
+                        <strong>Name:</strong> {photographer?.photographerName}
                       </p>
                       <p>
                         <strong>Photography Types:</strong>{" "}
-                        {photographer.photographyTypes
-                          .map(
-                            (type) => `${type.phtype} (₹${type.pricePerEvent})`
+                        {photographer?.photographyTypes
+                          ?.map(
+                            (type) =>
+                              `${type?.phtype} (₹${type?.pricePerEvent})`
                           )
                           .join(", ")}
                       </p>
                       <p>
                         <strong>Print Options:</strong>{" "}
-                        {photographer.printOption
-                          .map(
+                        {photographer?.printOption
+                          ?.map(
                             (opt) =>
-                              `${opt.printType} - ${opt.printDesc} (₹${opt.printPrice})`
+                              `${opt?.printType} - ${opt?.printDesc} (₹${opt?.printPrice})`
                           )
                           .join(", ")}
                       </p>
@@ -562,25 +578,25 @@ const BookingsPage: React.FC = () => {
                 <CardContent className="space-y-2">
                   <p>
                     <strong>AC Rooms:</strong>{" "}
-                    {selectedBooking.room.AcRoom.noOfRooms} (₹
-                    {selectedBooking.room.AcRoom.pricePerNight}/night)
-                    {selectedBooking.room.AcRoom.amenities.length > 0 && (
+                    {selectedBooking?.room?.AcRoom?.noOfRooms} (₹
+                    {selectedBooking?.room?.AcRoom?.pricePerNight}/night)
+                    {selectedBooking?.room?.AcRoom?.amenities?.length > 0 && (
                       <>
                         <br />
                         <strong>Amenities:</strong>{" "}
-                        {selectedBooking.room.AcRoom.amenities.join(", ")}
+                        {selectedBooking?.room?.AcRoom?.amenities?.join(", ")}
                       </>
                     )}
                   </p>
                   <p>
                     <strong>Non-AC Rooms:</strong>{" "}
-                    {selectedBooking.room.NonAcRoom.noOfRooms} (₹
-                    {selectedBooking.room.NonAcRoom.pricePerNight}/night)
-                    {selectedBooking.room.NonAcRoom.amenities.length > 0 && (
+                    {selectedBooking?.room?.NonAcRoom?.noOfRooms} (₹
+                    {selectedBooking?.room?.NonAcRoom?.pricePerNight}/night)
+                    {selectedBooking?.room?.NonAcRoom?.amenities?.length > 0 && (
                       <>
                         <br />
                         <strong>Amenities:</strong>{" "}
-                        {selectedBooking.room.NonAcRoom.amenities.join(", ")}
+                        {selectedBooking?.room?.NonAcRoom?.amenities?.join(", ")}
                       </>
                     )}
                   </p>
