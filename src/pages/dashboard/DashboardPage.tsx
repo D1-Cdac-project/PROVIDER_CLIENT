@@ -69,7 +69,7 @@ const DashboardPage: React.FC = () => {
         (b) => b.paymentStatus === "pending"
       ).length;
       const completedBookings = transformedBookings.filter(
-        (b) => b.status === "completed"
+        (b) => b.status === "Completed"
       ).length;
 
       setAnalyticsData({

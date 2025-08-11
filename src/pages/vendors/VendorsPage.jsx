@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Utensils, Camera, Bed, Eye, Pencil, Trash2 } from "lucide-react";
 import { getAllCaterers, deleteCaterer } from "../../services/catererApi";
 import {
@@ -12,6 +12,7 @@ import Button from "../../components/ui/Button";
 
 const VendorsPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [caterers, setCaterers] = useState([]);
   const [photographers, setPhotographers] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -23,26 +24,50 @@ const VendorsPage = () => {
   const [deleteItem, setDeleteItem] = useState(null);
   const [imageLoading, setImageLoading] = useState({});
 
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      // Fetch each vendor type independently
+      const caterersPromise = getAllCaterers().catch((error) => {
+        console.error("Error fetching caterers:", error);
+        return []; // Return empty array on error
+      });
+      const photographersPromise = getPhotographers().catch((error) => {
+        console.error("Error fetching photographers:", error);
+        return [];
+      });
+      const roomsPromise = getAllRooms().catch((error) => {
+        console.error("Error fetching rooms:", error);
+        return [];
+      });
+
+      // Wait for all promises to resolve
+      const [caterersData, photographersData, roomsData] = await Promise.all([
+        caterersPromise,
+        photographersPromise,
+        roomsPromise,
+      ]);
+
+      setCaterers(caterersData || []);
+      setPhotographers(photographersData || []);
+      setRooms(roomsData || []);
+    } catch (error) {
+      console.error("Error fetching vendor data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [caterersData, photographersData, roomsData] = await Promise.all([
-          getAllCaterers(),
-          getPhotographers(),
-          getAllRooms(),
-        ]);
-        setCaterers(caterersData);
-        setPhotographers(photographersData);
-        setRooms(roomsData);
-      } catch (error) {
-        console.error("Error fetching vendor data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
+
+  // Refetch data when navigating back from add vendor pages
+  useEffect(() => {
+    if (location.state?.fromAddVendor) {
+      fetchData(); // Refetch to include the newly added vendor
+    }
+  }, [location]);
 
   const handleDelete = async () => {
     if (!deleteItem) return;
@@ -58,7 +83,6 @@ const VendorsPage = () => {
         await deleteRoom(id);
         setRooms(rooms.filter((r) => r._id !== id));
       }
-
       setIsDeleteModalOpen(false);
       setDeleteItem(null);
     } catch (error) {
@@ -129,7 +153,6 @@ const VendorsPage = () => {
             count: caterers.length,
             link: "/vendors/caterers/new",
           },
-
           {
             icon: Bed,
             title: "Rooms",
@@ -154,7 +177,7 @@ const VendorsPage = () => {
               <p className="text-sm font-medium text-gray-500 mb-4">
                 Active {item.title.toLowerCase()}
               </p>
-              <Link to={item.link}>
+              <Link to={item.link} state={{ fromAddVendor: true }}>
                 <Button
                   variant="outline"
                   size="sm"
@@ -189,210 +212,231 @@ const VendorsPage = () => {
       {/* Section Content */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {activeSection === "photographers" &&
-          photographers.map((photographer) => (
-            <Card
-              key={photographer._id}
-              className="border-none shadow-lg rounded-2xl overflow-hidden bg-white hover:shadow-xl hover:scale-105 transition-all duration-300"
-            >
-              <CardContent className="p-0">
-                <div className="relative w-full h-48">
-                  {imageLoading[photographer._id] !== false && (
-                    <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
-                  )}
-                  <img
-                    src={photographer.photographyTypes[0]?.sampleWork[0] || ""}
-                    alt={photographer.photographerName}
-                    className={`w-full h-48 object-cover border-b border-gray-200 ${
-                      imageLoading[photographer._id] !== false
-                        ? "opacity-0"
-                        : "opacity-100"
-                    } transition-opacity duration-300`}
-                    onLoad={() => handleImageLoad(photographer._id)}
-                    onError={(e) => {
-                      e.target.src = handleImageError(
-                        photographer._id,
-                        "photographer"
-                      );
-                    }}
-                  />
-                </div>
-                <div className="p-5">
-                  <h4 className="text-xl font-semibold text-gray-900 truncate">
-                    {photographer.photographerName}
-                  </h4>
-                  <p className="text-base font-medium text-gray-600 mt-1">
-                    Mandap: {photographer.mandapId[0].mandapName || "N/A"}
-                  </p>
-                  <p className="text-base font-medium text-gray-600 mt-1 truncate">
-                    Types:{" "}
-                    {photographer.photographyTypes
-                      ?.map((pt) => pt.phtype)
-                      .join(", ") || "N/A"}
-                  </p>
-                  <div className="flex justify-end space-x-3 mt-4">
-                    <button
-                      onClick={() => openModal(photographer)}
-                      className="text-indigo-600 hover:text-indigo-800 p-2 rounded-full hover:bg-indigo-50 transition-colors"
-                      title="View Details"
-                    >
-                      <Eye className="h-5 w-5" />
-                    </button>
-                    <Link
-                      to={`/vendors/photographers/edit/${photographer._id}`}
-                    >
-                      <button
-                        className="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors"
-                        title="Edit"
-                      >
-                        <Pencil className="h-5 w-5" />
-                      </button>
-                    </Link>
-                    <button
-                      onClick={() =>
-                        openDeleteModal("photographer", photographer._id)
+          (photographers.length > 0 ? (
+            photographers.map((photographer) => (
+              <Card
+                key={photographer._id}
+                className="border-none shadow-lg rounded-2xl overflow-hidden bg-white hover:shadow-xl hover:scale-105 transition-all duration-300"
+              >
+                <CardContent className="p-0">
+                  <div className="relative w-full h-48">
+                    {imageLoading[photographer._id] !== false && (
+                      <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
+                    )}
+                    <img
+                      src={
+                        photographer.photographyTypes[0]?.sampleWork[0] || ""
                       }
-                      className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
+                      alt={photographer.photographerName}
+                      className={`w-full h-48 object-cover border-b border-gray-200 ${
+                        imageLoading[photographer._id] !== false
+                          ? "opacity-0"
+                          : "opacity-100"
+                      } transition-opacity duration-300`}
+                      onLoad={() => handleImageLoad(photographer._id)}
+                      onError={(e) => {
+                        e.target.src = handleImageError(
+                          photographer._id,
+                          "photographer"
+                        );
+                      }}
+                    />
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="p-5">
+                    <h4 className="text-xl font-semibold text-gray-900 truncate">
+                      {photographer.photographerName}
+                    </h4>
+                    <p className="text-base font-medium text-gray-600 mt-1">
+                      Mandap: {photographer.mandapId[0]?.mandapName || "N/A"}
+                    </p>
+                    <p className="text-base font-medium text-gray-600 mt-1 truncate">
+                      Types:{" "}
+                      {photographer.photographyTypes
+                        ?.map((pt) => pt.phtype)
+                        .join(", ") || "N/A"}
+                    </p>
+                    <div className="flex justify-end space-x-3 mt-4">
+                      <button
+                        onClick={() => openModal(photographer)}
+                        className="text-indigo-600 hover:text-indigo-800 p-2 rounded-full hover:bg-indigo-50 transition-colors"
+                        title="View Details"
+                      >
+                        <Eye className="h-5 w-5" />
+                      </button>
+                      <Link
+                        to={`/vendors/photographers/edit/${photographer._id}`}
+                      >
+                        <button
+                          className="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors"
+                          title="Edit"
+                        >
+                          <Pencil className="h-5 w-5" />
+                        </button>
+                      </Link>
+                      <button
+                        onClick={() =>
+                          openDeleteModal("photographer", photographer._id)
+                        }
+                        className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <p className="text-gray-600 col-span-full text-center">
+              No photographers available. Add a new photographer to get started.
+            </p>
           ))}
 
         {activeSection === "caterers" &&
-          caterers.map((caterer) => (
-            <Card
-              key={caterer._id}
-              className="border-none shadow-lg rounded-2xl overflow-hidden bg-white hover:shadow-xl hover:scale-105 transition-all duration-300"
-            >
-              <CardContent className="p-0">
-                <div className="relative w-full h-48">
-                  {imageLoading[caterer._id] !== false && (
-                    <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
-                  )}
-                  <img
-                    src={caterer.menuCategory?.[0]?.categoryImage || ""}
-                    alt={caterer.catererName}
-                    className={`w-full h-48 object-cover border-b border-gray-200 ${
-                      imageLoading[caterer._id] !== false
-                        ? "opacity-0"
-                        : "opacity-100"
-                    } transition-opacity duration-300`}
-                    onLoad={() => handleImageLoad(caterer._id)}
-                    onError={(e) => {
-                      e.target.src = handleImageError(caterer._id, "caterer");
-                    }}
-                  />
-                </div>
-                <div className="p-5">
-                  <h4 className="text-xl font-semibold text-gray-900 truncate">
-                    {caterer.catererName}
-                  </h4>
-                  <p className="text-base font-medium text-gray-600 mt-1">
-                    Mandap:{" "}
-                    {Array.isArray(caterer.mandapId)
-                      ? caterer.mandapId[0]?.mandapName || "N/A"
-                      : caterer.mandapId?.mandapName || "N/A"}
-                  </p>
-                  <p className="text-base font-medium text-gray-600 mt-1">
-                    Food Type: {caterer.foodType?.join(", ") || "N/A"}
-                  </p>
-                  <div className="flex justify-end space-x-3 mt-4">
-                    <button
-                      onClick={() => openModal(caterer)}
-                      className="text-indigo-600 hover:text-indigo-800 p-2 rounded-full hover:bg-indigo-50 transition-colors"
-                      title="View Details"
-                    >
-                      <Eye className="h-5 w-5" />
-                    </button>
-                    <Link to={`/vendors/caterers/edit/${caterer._id}`}>
-                      <button
-                        className="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors"
-                        title="Edit"
-                      >
-                        <Pencil className="h-5 w-5" />
-                      </button>
-                    </Link>
-                    <button
-                      onClick={() => openDeleteModal("caterer", caterer._id)}
-                      className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
+          (caterers.length > 0 ? (
+            caterers.map((caterer) => (
+              <Card
+                key={caterer._id}
+                className="border-none shadow-lg rounded-2xl overflow-hidden bg-white hover:shadow-xl hover:scale-105 transition-all duration-300"
+              >
+                <CardContent className="p-0">
+                  <div className="relative w-full h-48">
+                    {imageLoading[caterer._id] !== false && (
+                      <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
+                    )}
+                    <img
+                      src={caterer.menuCategory?.[0]?.categoryImage || ""}
+                      alt={caterer.catererName}
+                      className={`w-full h-48 object-cover border-b border-gray-200 ${
+                        imageLoading[caterer._id] !== false
+                          ? "opacity-0"
+                          : "opacity-100"
+                      } transition-opacity duration-300`}
+                      onLoad={() => handleImageLoad(caterer._id)}
+                      onError={(e) => {
+                        e.target.src = handleImageError(caterer._id, "caterer");
+                      }}
+                    />
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="p-5">
+                    <h4 className="text-xl font-semibold text-gray-900 truncate">
+                      {caterer.catererName}
+                    </h4>
+                    <p className="text-base font-medium text-gray-600 mt-1">
+                      Mandap:{" "}
+                      {Array.isArray(caterer.mandapId)
+                        ? caterer.mandapId[0]?.mandapName || "N/A"
+                        : caterer.mandapId?.mandapName || "N/A"}
+                    </p>
+                    <p className="text-base font-medium text-gray-600 mt-1">
+                      Food Type: {caterer.foodType?.join(", ") || "N/A"}
+                    </p>
+                    <div className="flex justify-end space-x-3 mt-4">
+                      <button
+                        onClick={() => openModal(caterer)}
+                        className="text-indigo-600 hover:text-indigo-800 p-2 rounded-full hover:bg-indigo-50 transition-colors"
+                        title="View Details"
+                      >
+                        <Eye className="h-5 w-5" />
+                      </button>
+                      <Link to={`/vendors/caterers/edit/${caterer._id}`}>
+                        <button
+                          className="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors"
+                          title="Edit"
+                        >
+                          <Pencil className="h-5 w-5" />
+                        </button>
+                      </Link>
+                      <button
+                        onClick={() => openDeleteModal("caterer", caterer._id)}
+                        className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <p className="text-gray-600 col-span-full text-center">
+              No caterers available. Add a new caterer to get started.
+            </p>
           ))}
 
         {activeSection === "rooms" &&
-          rooms.map((room) => (
-            <Card
-              key={room._id}
-              className="border-none shadow-lg rounded-2xl overflow-hidden bg-white hover:shadow-xl hover:scale-105 transition-all duration-300"
-            >
-              <CardContent className="p-0">
-                <div className="relative w-full h-48">
-                  {imageLoading[room._id] !== false && (
-                    <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
-                  )}
-                  <img
-                    src={
-                      room.AcRoom?.roomImages[0] ||
-                      room.NonAcRoom?.roomImages[0] ||
-                      ""
-                    }
-                    alt="Room"
-                    className={`w-full h-48 object-cover border-b border-gray-200 ${
-                      imageLoading[room._id] !== false
-                        ? "opacity-0"
-                        : "opacity-100"
-                    } transition-opacity duration-300`}
-                    onLoad={() => handleImageLoad(room._id)}
-                    onError={(e) => {
-                      e.target.src = handleImageError(room._id, "room");
-                    }}
-                  />
-                </div>
-                <div className="p-5">
-                  <p className="text-base font-medium text-gray-600 mt-1">
-                    Mandap: {room.mandapId?.mandapName || "N/A"}
-                  </p>
-                  <p className="text-base font-medium text-gray-600 mt-1 truncate">
-                    {room.AcRoom ? `AC: ${room.AcRoom.noOfRooms}` : "No AC"}
-                    {room.NonAcRoom && `, Non-AC: ${room.NonAcRoom.noOfRooms}`}
-                  </p>
-                  <div className="flex justify-end space-x-3 mt-4">
-                    <button
-                      onClick={() => openModal(room)}
-                      className="text-indigo-600 hover:text-indigo-800 p-2 rounded-full hover:bg-indigo-50 transition-colors"
-                      title="View Details"
-                    >
-                      <Eye className="h-5 w-5" />
-                    </button>
-                    <Link to={`/vendors/rooms/edit/${room._id}`}>
-                      <button
-                        className="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors"
-                        title="Edit"
-                      >
-                        <Pencil className="h-5 w-5" />
-                      </button>
-                    </Link>
-                    <button
-                      onClick={() => openDeleteModal("room", room._id)}
-                      className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
+          (rooms.length > 0 ? (
+            rooms.map((room) => (
+              <Card
+                key={room._id}
+                className="border-none shadow-lg rounded-2xl overflow-hidden bg-white hover:shadow-xl hover:scale-105 transition-all duration-300"
+              >
+                <CardContent className="p-0">
+                  <div className="relative w-full h-48">
+                    {imageLoading[room._id] !== false && (
+                      <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
+                    )}
+                    <img
+                      src={
+                        room.AcRoom?.roomImages[0] ||
+                        room.NonAcRoom?.roomImages[0] ||
+                        ""
+                      }
+                      alt="Room"
+                      className={`w-full h-48 object-cover border-b border-gray-200 ${
+                        imageLoading[room._id] !== false
+                          ? "opacity-0"
+                          : "opacity-100"
+                      } transition-opacity duration-300`}
+                      onLoad={() => handleImageLoad(room._id)}
+                      onError={(e) => {
+                        e.target.src = handleImageError(room._id, "room");
+                      }}
+                    />
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="p-5">
+                    <p className="text-base font-medium text-gray-600 mt-1">
+                      Mandap: {room.mandapId?.mandapName || "N/A"}
+                    </p>
+                    <p className="text-base font-medium text-gray-600 mt-1 truncate">
+                      {room.AcRoom ? `AC: ${room.AcRoom.noOfRooms}` : "No AC"}
+                      {room.NonAcRoom &&
+                        `, Non-AC: ${room.NonAcRoom.noOfRooms}`}
+                    </p>
+                    <div className="flex justify-end space-x-3 mt-4">
+                      <button
+                        onClick={() => openModal(room)}
+                        className="text-indigo-600 hover:text-indigo-800 p-2 rounded-full hover:bg-indigo-50 transition-colors"
+                        title="View Details"
+                      >
+                        <Eye className="h-5 w-5" />
+                      </button>
+                      <Link to={`/vendors/rooms/edit/${room._id}`}>
+                        <button
+                          className="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors"
+                          title="Edit"
+                        >
+                          <Pencil className="h-5 w-5" />
+                        </button>
+                      </Link>
+                      <button
+                        onClick={() => openDeleteModal("room", room._id)}
+                        className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <p className="text-gray-600 col-span-full text-center">
+              No rooms available. Add a new room to get started.
+            </p>
           ))}
       </div>
 
@@ -589,7 +633,7 @@ const VendorsPage = () => {
                               <ul className="list-disc pl-5 mt-2 text-gray-600">
                                 {category.menuItems.map((item, i) => (
                                   <li key={i} className="mt-1">
-                                    {item.itemName || "N/A"}{" "}
+                                    {item.itemName || "N/A"}
                                   </li>
                                 ))}
                               </ul>
